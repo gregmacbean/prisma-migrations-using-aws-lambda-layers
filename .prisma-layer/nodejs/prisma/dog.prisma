@@ -1,0 +1,16 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../node_modules/.prisma/dog-client"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DOG_URL")
+}
+
+model Dog {
+  id    String @id @default(cuid())
+  name  String
+  color String
+}

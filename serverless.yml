@@ -1,0 +1,67 @@
+service: petstore
+
+frameworkVersion: '3'
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: ${opt:stage, 'dev'}
+  region: ap-southeast-2
+
+  environment:
+    DOG_URL: ${self:custom.DOG_URL.${self:provider.stage}}
+    CAT_URL: ${self:custom.CAT_URL.${self:provider.stage}}
+    NODE_ENV: ${self:custom.NODE_ENV.${self:provider.stage}}
+
+plugins:
+  - serverless-scriptable-plugin
+  - serverless-offline
+
+custom:
+  DOG_URL:
+    local: file:dog.db"
+    dev: file:/tmp/prisma/dog.db
+  CAT_URL:
+    local: file:cat.db
+    dev: file:/tmp/prisma/cat.db
+  NODE_ENV:
+    local: development
+    dev: aws-testing
+  scriptable:
+    hooks:
+      'package:initialize': 'sh ./ci/create-prisma-layer.sh'
+
+layers:
+  prisma:
+    path: .prisma-layer
+    description: 'Layer for Prisma Clients'
+    package:
+      patterns:
+        - '!nodejs/node_modules/.bin/*'
+        - '!nodejs/node_modules/@prisma/engines/*'
+        - '!nodejs/node_modules/.prisma/**/libquery_engine-*'
+        - '!nodejs/prisma/*.prisma'
+        - 'nodejs/node_modules/.prisma/client/libquery_engine-rhel-openssl-1.0.x.so.node'
+        - 'nodejs/prisma/*.db'
+
+package:
+  patterns:
+    - '!node_modules/aws-sdk/**'
+    - '!node_modules/prisma'
+    - '!node_modules/.prisma'
+    - '!node_modules/@prisma'
+    - '!.prisma-layer'
+    - '!prisma'
+    - '!ci'
+    - '!*.*'
+    - '!.env'
+    - 'index.js'
+
+functions:
+  petstore-api:
+    handler: index.handler
+    layers:
+      - { Ref: PrismaLambdaLayer }
+    events:
+      - httpApi: '*'
