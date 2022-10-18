@@ -19,6 +19,13 @@ plugins:
   - serverless-offline
 
 custom:
+  layerConfig:
+    installLayers: true
+    exportLayers: true
+    upgradeLayerReferences: true
+    exportPrefix: ${self:service}-derp
+    webpack:
+      backupFileType: js
   DOG_URL:
     local: file:dog.db"
     dev: file:/tmp/prisma/dog.db
